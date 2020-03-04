@@ -1,0 +1,95 @@
+---
+title: "Metin Madenciliği"
+author: "Buse Rüşvenli"
+date: "12/24/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library("tidytext") #metin verilerini bu paketle analiz edeceğiz
+library("tidyverse") #dplyr, ggplot2, tidyr gibi paketleri barındırıyor
+library("rtweet") #tweetleri çekmek için kullanacağız.
+library("wordcloud2") #kelime bulutu görseli için
+library("stopwords")
+```
+
+```{r}
+trumptweets<-readRDS("/Users/buserusvenli/Downloads/trumptweets.rds")
+glimpse(trumptweets)
+
+```
+
+```{r}
+trump<-trumptweets %>% select(5)
+head(trump)
+```
+```{r}
+trumptidy <- trump %>%
+
+filter(!str_detect(text, '^"')) %>%  #text sütununda yer alan tirnak işaretlerini bul (!) veri setinden temizle
+
+mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", ""))%>%  #linkleri bul ""bosluk koy komutunu verdik
+
+unnest_tokens(word, text) %>%  #trump veri setinin text değişkeni içindeki tweetlerini sözcüklere bölüyor ve bu yeni çiktiyi word kaydediyor.
+
+filter(!word %in% stop_words$word,  #gereksiz ifadelerden ve rakamlardan kurtulmak için yine filter komutunu kullandık
+        str_detect(word, "[a-z]"))  
+trumptidy 
+```
+
+
+```{r}
+head(trumptidy,10)
+```
+
+
+```{r}
+trumptidy %>%count(word,sort=TRUE) #hangi kelimeleri ne kadar kullandığına count komutu ile baktık.
+trumptidy  # vatandaş, demokratlar, haber, ülke, sahte, medya ve Amerika gibi ifadeler sıklıkla kullanılmıştır.
+```
+
+
+```{r}
+trump_bigrams <- trump %>%
+  filter(!str_detect(text, '^"')) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)  #iki kelimeden oluşacak söz öbeklerini elde ettik.
+trump_bigrams
+```
+
+
+
+```{r}
+trump_bigrams %>%count(bigram,sort=TRUE)
+```
+
+```{r}
+trump_bigrams_tidy <-  trump_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>% #Ayırma
+  filter(!word1 %in% stop_words$word) %>%  #Temizleme
+  filter(!word2 %in% stop_words$word) %>%  #Temizleme
+  unite(bigram, word1, word2, sep = " ")%>% #Birleştirme
+  count(bigram,sort = TRUE
+        )
+```
+
+
+```{r}
+trump_bigrams_tidy 
+```
+
+
+
+```{r}
+wordcloud2(data = trump_bigrams_tidy ,
+           color = "random-light", 
+           backgroundColor = "grey25",
+           size =0.6)
+```
+
+
+`
+
+
+
